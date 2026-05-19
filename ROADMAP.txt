@@ -1,0 +1,416 @@
+================================================================================
+  ROADMAP - Simulador de Paginación de Memoria (Angular Frontend Only)
+  Proyecto 2 - Sistemas Operativos | Due: May 24 2026, 11:59pm | 200pts
+================================================================================
+
+CONSTANTES DEL SISTEMA
+-----------------------
+  RAM:          400 KB = 100 páginas
+  Page size:    4 KB
+  Disk access:  5s (page fault)
+  Hit time:     1s
+  Algorithms:   OPT, FIFO, SC (Second Chance), MRU, LRU, RND
+  Nota:         Siempre corren OPT + algoritmo seleccionado en paralelo
+
+================================================================================
+FASE 1 — PROJECT SETUP
+================================================================================
+[ ] 1.1  Crear proyecto Angular
+          ng new os-memory-paging-simulator --routing --style=scss
+
+[ ] 1.2  Estructura de carpetas
+          src/app/
+            core/
+              models/         <- interfaces/tipos
+              services/       <- lógica pura de simulación
+            features/
+              setup/          <- pantalla de configuración inicial
+              simulation/     <- pantalla de simulación
+                components/
+                  ram-bar/
+                  mmu-table/
+                  stats-panel/
+            shared/
+              components/     <- componentes reutilizables (botones, inputs)
+
+[ ] 1.3  Instalar dependencias opcionales
+          - Angular Material (tablas, inputs, botones)
+          - O Tailwind CSS para estilos rápidos
+          npm install @angular/material @angular/cdk
+
+[ ] 1.4  Configurar routing
+          /setup      -> SetupComponent (pantalla inicial)
+          /simulation -> SimulationComponent (pantalla de simulación)
+
+================================================================================
+FASE 2 — MODELOS E INTERFACES  (src/app/core/models/)
+================================================================================
+
+[ ] 2.1  page.model.ts
+          interface Page {
+            id: number;
+            pid: number;
+            ptr: number;
+            loaded: boolean;        // true = RAM real, false = virtual/disco
+            physicalAddress: number | null;  // número de frame en RAM (0-99)
+            loadedTime: number;     // reloj cuando se cargó en RAM
+            mark: boolean;          // bit de referencia (para SC)
+            lastUsed: number;       // timestamp último uso (para LRU/MRU)
+            useCount: number;       // frecuencia de uso (para LFU si se necesita)
+            futureUse: number;      // próximo uso en steps (para OPT)
+          }
+
+[ ] 2.2  process.model.ts
+          interface Process {
+            pid: number;
+            killed: boolean;
+            symbolTable: Map<number, number[]>;  // ptr -> [pageIds]
+          }
+
+[ ] 2.3  instruction.model.ts
+          type InstructionType = 'new' | 'use' | 'delete' | 'kill';
+          interface Instruction {
+            type: InstructionType;
+            pid: number;
+            ptr?: number;   // para use/delete
+            size?: number;  // para new (en bytes)
+          }
+
+[ ] 2.4  simulation-state.model.ts
+          interface AlgorithmState {
+            name: string;                      // 'OPT' | 'FIFO' | 'SC' | 'MRU' | 'LRU' | 'RND'
+            ram: (Page | null)[];              // array de 100 slots
+            pages: Map<number, Page>;          // pageId -> Page
+            processes: Map<number, Process>;
+            clock: number;                     // tiempo total en segundos
+            thrashingTime: number;             // tiempo gastado en fallos
+            nextPageId: number;
+            ptrCounter: number;
+            fifoQueue: number[];               // para FIFO (orden de llegada)
+          }
+
+          interface SimulationState {
+            instructions: Instruction[];
+            currentStep: number;
+            optState: AlgorithmState;
+            algState: AlgorithmState;
+            isRunning: boolean;
+            isPaused: boolean;
+            speed: number;                     // ms entre pasos
+          }
+
+================================================================================
+FASE 3 — SERVICIOS CORE  (src/app/core/services/)
+================================================================================
+
+[ ] 3.1  seeded-random.service.ts
+          - Implementar PRNG determinístico (ej: Mulberry32 o LCG)
+          - seed(n: number): void
+          - next(): number   <- retorna float [0,1)
+          - nextInt(min, max): number
+          Razón: Math.random() no es seedeable. Esto garantiza repetibilidad.
+
+[ ] 3.2  instruction-generator.service.ts
+          Genera instrucciones aleatorias respetando las reglas:
+          - new: puede usarse en cualquier momento (salvo después de kill)
+          - use: solo si hay ptr en tabla de símbolos
+          - delete: solo si hay ptr en tabla de símbolos
+          - kill: una sola vez, última instrucción del proceso
+          - Procesos pueden intercalarse libremente
+
+          Inputs: seed, P (procesos), N (total operaciones)
+          Output: Instruction[]
+
+          Formato archivo (Anexo 1) — separado por comas:
+            new,1,500
+            use,1,1
+            new,1,1000
+            delete,1,1
+            kill,1
+          Nota: el ptr en use/delete es el índice de aparición de new (1-based global)
+
+[ ] 3.3  instruction-parser.service.ts
+          Parsea archivo de texto subido por el usuario al formato Instruction[]
+          - Leer línea por línea
+          - Mapear punteros por orden de aparición de 'new' globalmente
+
+[ ] 3.4  mmu.service.ts  (Motor central de MMU)
+          Maneja el estado de memoria para UN algoritmo dado.
+          Métodos:
+            - execNew(pid, size, state): AlgorithmState
+                * Calcula cuántas páginas necesita (ceil(size/4096))
+                * Si RAM llena: aplica algoritmo de reemplazo
+                * Asigna frames, actualiza tabla, retorna nuevo ptr
+                * Tiempo: 1s × páginas cargadas (siempre fault en new)
+            - execUse(ptr, state): AlgorithmState
+                * Verifica si páginas del ptr están en RAM
+                * Si no: page fault → algoritmo de reemplazo → +5s
+                * Si sí: page hit → +1s
+            - execDelete(ptr, state): AlgorithmState
+                * Libera todas las páginas del ptr
+                * Elimina ptr de tabla de símbolos
+            - execKill(pid, state): AlgorithmState
+                * Libera todas las páginas y ptrs del proceso
+            - replacePageFIFO(state): number (pageId a reemplazar)
+            - replacePageLRU(state): number
+            - replacePageMRU(state): number
+            - replacePageSC(state): number    (Second Chance)
+            - replacePageRND(state): number
+            - replacePageOPT(instructions, currentStep, state): number
+
+[ ] 3.5  opt-lookahead.service.ts
+          Pre-calcula para cada página cuándo será usada próximamente.
+          Se ejecuta UNA VEZ al inicio sobre toda la secuencia de instrucciones.
+          Retorna Map<pageId, nextUseStep[]>
+          OPT reemplaza la página cuyo próximo uso sea más lejano (o nunca).
+
+[ ] 3.6  simulation-engine.service.ts
+          Orquesta ambas simulaciones (OPT + alg seleccionado) coordinadamente.
+          - initSimulation(instructions, algorithm, seed): void
+          - step(): void   <- avanza UN paso en AMBOS algoritmos
+          - play(): void   <- inicia interval automático
+          - pause(): void
+          - reset(): void
+          - getState(): Observable<SimulationState>
+          Usa BehaviorSubject para emitir estado a los componentes.
+
+================================================================================
+FASE 4 — PANTALLA 1: SETUP  (src/app/features/setup/)
+================================================================================
+
+[ ] 4.1  setup.component.ts + .html
+          Formulario con:
+
+          [ ] Semilla (número entero)
+          [ ] Algoritmo: dropdown [FIFO | SC | MRU | LRU | RND]
+          [ ] Modo de entrada: radio [Subir archivo | Generar automáticamente]
+
+          Si "Subir archivo":
+            [ ] Input file (.txt) → llama instruction-parser.service
+
+          Si "Generar automáticamente":
+            [ ] P: número de procesos (10 | 50 | 100)
+            [ ] N: número de operaciones (500 | 1000 | 5000)
+            [ ] Botón "Generar" → llama instruction-generator.service
+
+          Siempre (después de tener instrucciones):
+            [ ] Botón "Descargar archivo de operaciones" → genera .txt descargable
+            [ ] Botón "Iniciar Simulación" → navega a /simulation
+
+          Validaciones:
+            - No permitir iniciar sin instrucciones válidas
+            - Semilla requerida
+
+[ ] 4.2  Lógica de descarga del archivo
+          Crear Blob con el contenido en formato CSV del Anexo 1
+          Usar URL.createObjectURL() para trigger de descarga
+
+================================================================================
+FASE 5 — PANTALLA 2: SIMULACIÓN  (src/app/features/simulation/)
+================================================================================
+
+La pantalla se divide en DOS columnas iguales: OPT (izquierda) | ALG (derecha)
+Cada columna tiene los mismos subcomponentes.
+
+[ ] 5.1  simulation.component.ts + .html
+          Layout principal:
+          ┌─────────────────────────────────────────────────────┐
+          │  [Controles: Play/Pause | Reset | Velocidad]        │
+          ├────────────────────┬────────────────────────────────┤
+          │    RAM - OPT       │    RAM - [ALG]                 │
+          │  [ram-bar]         │  [ram-bar]                     │
+          ├────────────────────┼────────────────────────────────┤
+          │    MMU - OPT       │    MMU - [ALG]                 │
+          │  [mmu-table]       │  [mmu-table]                   │
+          ├────────────────────┼────────────────────────────────┤
+          │  [stats-panel]     │  [stats-panel]                 │
+          └────────────────────┴────────────────────────────────┘
+
+[ ] 5.2  ram-bar.component.ts + .html
+          - Array de 100 slots (100 × 4KB = 400KB)
+          - Cada slot coloreado por PID (color único por proceso)
+          - Slots vacíos = gris
+          - Tooltip al hover: PAGE_ID, PID, ptr
+          Referencia visual: barra horizontal como el Anexo 2
+
+[ ] 5.3  mmu-table.component.ts + .html
+          Tabla scrollable con columnas:
+            PAGE_ID | PID | LOADED | L-ADDR | M-ADDR | D-ADDR | LOADED-T | MARK
+
+          - LOADED: "X" si está en RAM, vacío si en disco
+          - L-ADDR: dirección lógica (ptr-based)
+          - M-ADDR: dirección física (frame number en RAM)
+          - D-ADDR: dirección en disco (si está en virtual)
+          - LOADED-T: timestamp cuando se cargó
+          - MARK: bit SC (para Second Chance) o info extra
+          - Colores de filas: por PID (mismo color que ram-bar)
+
+[ ] 5.4  stats-panel.component.ts + .html
+          Mostrar:
+          ┌──────────────────────────────────────┐
+          │ Procesos: [N]      Sim-Time: [Xs]    │
+          ├──────────────────────────────────────┤
+          │ RAM KB: [X]   RAM %: [X%]            │
+          │ V-RAM KB: [X] V-RAM %: [X%]          │
+          │   (V-RAM% = vram_kb / 400 * 100)     │
+          ├──────────────────────────────────────┤
+          │ Pages: LOADED [X] | UNLOADED [X]     │
+          │ Thrashing: [Xs] [X%]  ← ROJO si >50%│
+          │ Fragmentación: [X KB]                │
+          └──────────────────────────────────────┘
+
+          Fragmentación interna = Σ(4KB - bytes_usados) por página en RAM
+          Nota: solo páginas ACTUALMENTE en el sistema
+
+[ ] 5.5  Controles de simulación
+          - Botón Play/Pause (toggle)
+          - Slider de velocidad: lento / normal / rápido (ajusta ms del interval)
+          - Botón "Paso a paso" (avanza un step manualmente)
+          - Botón Reset → vuelve a setup
+
+================================================================================
+FASE 6 — LÓGICA DE ALGORITMOS DE REEMPLAZO
+================================================================================
+
+Todos se invocan cuando RAM está llena (100 páginas) y se necesita un frame libre.
+
+[ ] 6.1  FIFO (First In, First Out)
+          - Mantener cola con orden de llegada a RAM
+          - Reemplazar la página que lleva más tiempo en RAM
+          - Estructura extra en AlgorithmState: fifoQueue: number[]
+
+[ ] 6.2  SC (Second Chance)
+          - Variante de FIFO con bit de referencia (mark)
+          - Al acceder a página: mark = true
+          - Al reemplazar: si mark=true → mark=false, mover al final de cola
+          - Reemplazar primera con mark=false
+          - Estructura extra: scQueue: number[]
+
+[ ] 6.3  LRU (Least Recently Used)
+          - Reemplazar la página con el lastUsed más antiguo
+          - Actualizar lastUsed = clock en cada acceso
+          - No necesita estructura extra (usar lastUsed de Page)
+
+[ ] 6.4  MRU (Most Recently Used)
+          - Reemplazar la página con el lastUsed más reciente
+          - Actualizar lastUsed = clock en cada acceso
+
+[ ] 6.5  RND (Random)
+          - Elegir página aleatoria en RAM usando el seeded PRNG
+          - Garantiza repetibilidad con la misma semilla
+
+[ ] 6.6  OPT (Optimal / Belady)
+          - Pre-calcular para cada página cuál es su próximo uso en el futuro
+          - Reemplazar la página que NO se usará nunca más, o la más lejana
+          - Requiere pre-procesamiento del array completo de instrucciones
+          - Estructura extra: futureUse: Map<pageId, number> (recalcular cada step)
+
+================================================================================
+FASE 7 — GENERADOR DE INSTRUCCIONES (detalle de reglas)
+================================================================================
+
+Algoritmo de generación con semilla:
+
+  Para cada paso de 1 a N:
+    1. Elegir PID aleatoriamente entre procesos vivos
+    2. Determinar operaciones válidas para ese proceso:
+       - 'new' siempre válida (si proceso no está killed)
+       - 'use' solo si symbolTable.size > 0
+       - 'delete' solo si symbolTable.size > 0
+       - 'kill' solo si es la última instrucción del proceso
+    3. Decidir si "matar" el proceso en este paso:
+       - Si es el último step permitido para ese proceso → forzar kill
+    4. Elegir operación aleatoria entre las válidas
+    5. Si 'new': generar size aleatorio (ej: 50 a 10000 bytes)
+    6. Si 'use'/'delete': elegir ptr aleatorio de symbolTable
+
+  Regla de distribución:
+    - Repartir N operaciones entre P procesos (aleatoriamente)
+    - Cada proceso DEBE terminar con kill
+    - Los procesos se intercalan en el array global
+
+================================================================================
+FASE 8 — INTEGRACIÓN Y PRUEBAS
+================================================================================
+
+[ ] 8.1  Probar con el archivo del Anexo 1:
+          new,1,500
+          use,1,1
+          new,1,1000
+          use,1,1
+          use,1,2
+          new,2,500
+          use,2,3
+          use,2,1
+          new,2,50
+          use,2,4
+          delete,1,1
+          use,2,2
+          use,2,3
+          delete,2,2
+          kill,1
+          kill,2
+
+[ ] 8.2  Verificar que OPT y ALG terminan al mismo tiempo (mismo número de steps)
+
+[ ] 8.3  Verificar el reloj:
+          - page hit → +1s al reloj
+          - page fault → +5s al reloj y +5s al thrashingTime
+          - new siempre cuenta como fault por página
+          - Operación multi-página: sumar por cada página
+
+[ ] 8.4  Verificar fragmentación interna:
+          Ejemplo: new(1, 500) → ocupa 1 página (4096B) pero usa 500B
+          Fragmentación = 4096 - 500 = 3596B para esa página
+
+[ ] 8.5  Verificar repetibilidad: misma semilla → misma simulación exacta
+
+[ ] 8.6  Probar con P=10,N=500 | P=50,N=1000 | P=100,N=5000
+
+================================================================================
+ORDEN DE IMPLEMENTACIÓN RECOMENDADO
+================================================================================
+
+  Semana 1 (May 19-21):
+    1. Setup del proyecto Angular + routing
+    2. Modelos e interfaces (Fase 2)
+    3. SeededRandom service
+    4. InstructionGenerator + InstructionParser
+    5. Setup screen funcional con descarga de archivo
+
+  Semana 2 (May 22-24):
+    6. MMU service con todos los algoritmos
+    7. OPT pre-computation
+    8. SimulationEngine con BehaviorSubject
+    9. RAM bar component
+    10. MMU table component
+    11. Stats panel component
+    12. Controles Play/Pause/Step
+    13. Pruebas con archivo del Anexo 1
+    14. CSS polish (colores por PID, rojo en thrashing >50%)
+
+================================================================================
+CRITERIOS DE EVALUACIÓN (recordatorio)
+================================================================================
+
+  10%  Algoritmo OPT implementado y visualizable
+  60%  Algoritmos FIFO, SC, MRU, LRU, RND (15% c/u)
+  20%  Diseño de interfaz e información completa
+  10%  Repetibilidad con semilla
+
+  CRÍTICO: La simulación DEBE correr con el archivo de pruebas del profesor.
+           Si no corre → asignación anulada automáticamente.
+           Revisar formato CSV exacto del Anexo 1.
+
+================================================================================
+NOTAS ADICIONALES
+================================================================================
+
+  - El proyecto corre en entorno Linux (Fedora). Angular build estático es ideal.
+  - "ng build" genera dist/ que se puede servir con "npx serve dist/..."
+  - Para entrega: subir dist/ o dar link al repo con instrucciones de build.
+  - El ptr no se reutiliza aunque se haya borrado (incrementar siempre).
+  - V-RAM% es relativo a los 400KB de RAM (no al espacio de disco).
+    Ej: 500KB en V-RAM → 500/400 * 100 = 125%
+
+================================================================================

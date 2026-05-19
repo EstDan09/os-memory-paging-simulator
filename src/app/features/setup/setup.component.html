@@ -1,0 +1,99 @@
+<div class="setup-page">
+  <div class="setup-card">
+    <div class="card-header">
+      <h1>Memory Paging Simulator</h1>
+      <p>Proyecto 2 — Sistemas Operativos</p>
+    </div>
+
+    <div class="form-grid">
+      <!-- Left column: config -->
+      <div class="form-section">
+        <h2>Configuration</h2>
+
+        <div class="field">
+          <label>Seed</label>
+          <input type="number" [(ngModel)]="seed" min="0" placeholder="42" />
+        </div>
+
+        <div class="field">
+          <label>Algorithm</label>
+          <select [(ngModel)]="algorithm">
+            @for (alg of algorithms; track alg) {
+              <option [value]="alg">{{ alg }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Right column: input mode -->
+      <div class="form-section">
+        <h2>Input</h2>
+
+        <div class="mode-toggle">
+          <button [class.active]="mode === 'auto'" (click)="mode = 'auto'; instructions = []">
+            Auto Generate
+          </button>
+          <button [class.active]="mode === 'file'" (click)="mode = 'file'; instructions = []">
+            Upload File
+          </button>
+        </div>
+
+        @if (mode === 'auto') {
+          <div class="field">
+            <label>Processes (P)</label>
+            <select [(ngModel)]="P">
+              @for (p of pOptions; track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Operations (N)</label>
+            <select [(ngModel)]="N">
+              @for (n of nOptions; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+          </div>
+
+          <button class="btn btn-secondary" (click)="generate()">Generate</button>
+        }
+
+        @if (mode === 'file') {
+          <label class="file-label">
+            <input type="file" accept=".txt,.csv" (change)="onFileChange($event)" />
+            <span class="file-btn btn btn-secondary">Choose file</span>
+            <span class="file-name">{{ fileName || 'No file selected' }}</span>
+          </label>
+        }
+      </div>
+    </div>
+
+    @if (error) {
+      <div class="error-box">{{ error }}</div>
+    }
+
+    @if (hasInstructions) {
+      <div class="loaded-bar">
+        <span class="loaded-count">✓ {{ instructions.length }} instructions loaded</span>
+        <button class="btn btn-outline" (click)="downloadFile()">Download .txt</button>
+      </div>
+
+      @if (preview.length > 0) {
+        <div class="preview-box">
+          @for (line of preview; track $index) {
+            <div class="preview-line">{{ line }}</div>
+          }
+          @if (instructions.length > 20) {
+            <div class="preview-line muted">... {{ instructions.length - 20 }} more</div>
+          }
+        </div>
+      }
+
+      <button class="btn btn-primary start-btn" (click)="startSimulation()">
+        Start Simulation →
+      </button>
+    }
+  </div>
+</div>

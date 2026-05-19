@@ -1,0 +1,37 @@
+<div class="mmu-wrap">
+  <div class="table-label">MMU — {{ state.algorithmName }}</div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>PAGE ID</th>
+          <th>PID</th>
+          <th>LOADED</th>
+          <th>L-ADDR</th>
+          <th>M-ADDR</th>
+          <th>D-ADDR</th>
+          <th>LOADED-T</th>
+          <th>MARK</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (page of sortedPages; track page.id) {
+          <tr [style.background-color]="rowBg(page)">
+            <td>{{ page.id }}</td>
+            <td>{{ page.pid }}</td>
+            <td class="center">{{ page.inRam ? 'X' : '' }}</td>
+            <td>{{ page.ptrPageIndex + 1 }}</td>
+            <td>{{ mAddr(page) }}</td>
+            <td>{{ dAddr(page) }}</td>
+            <td>{{ loadedT(page) }}</td>
+            <td class="center">{{ markDisplay(page) }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="empty-row">No pages allocated yet</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

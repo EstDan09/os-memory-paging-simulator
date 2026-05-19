@@ -1,0 +1,119 @@
+.log-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 190px;
+  flex-shrink: 0;
+  border-top: 2px solid #2d3148;
+  background: #0a0d1a;
+}
+
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+  border-bottom: 1px solid #2d3148;
+  flex-shrink: 0;
+}
+
+.log-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #6366f1;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+
+  &.opt  { background: rgba(34, 197, 94, 0.7); }
+  &.tie  { background: #374151; }
+}
+
+.log-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: #0a0d1a; }
+  &::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  background: #0f1117;
+  z-index: 1;
+}
+
+th {
+  padding: 4px 8px;
+  text-align: left;
+  color: #475569;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #1e2235;
+}
+
+tr {
+  border-bottom: 1px solid rgba(30, 34, 53, 0.6);
+
+  &.opt-wins {
+    background: rgba(34, 197, 94, 0.05);
+  }
+
+  &.tie {
+    background: transparent;
+  }
+}
+
+td {
+  padding: 3px 8px;
+  color: #94a3b8;
+
+  &.num   { color: #475569; width: 40px; }
+  &.inst  { font-family: monospace; color: #cbd5e1; min-width: 120px; }
+  &.cost  { width: 80px; text-align: center; }
+  &.saves { width: 80px; text-align: center; }
+
+  &.opt-cost  { color: #86efac; }
+  &.alg-cost  { color: #94a3b8; }
+  &.alg-cost.worse { color: #f87171; font-weight: 600; }
+}
+
+.badge-win {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #86efac;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.badge-tie {
+  color: #374151;
+  font-size: 12px;
+}

@@ -1,1 +1,124 @@
-/* You can add global styles to this file, and also import other style files */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  background: #0f1117;
+  color: #e2e8f0;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+// ── Shared buttons ────────────────────────────────────────────────────────────
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: opacity 0.15s, background 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+
+  &:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background: #6366f1;
+    color: #fff;
+  }
+
+  &.btn-secondary {
+    background: #374151;
+    color: #e2e8f0;
+  }
+
+  &.btn-outline {
+    background: transparent;
+    border-color: #374151;
+    color: #94a3b8;
+
+    &:hover:not(:disabled) {
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+  }
+
+  &.btn-danger {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  &.btn-sm {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
+// ── Form inputs ───────────────────────────────────────────────────────────────
+
+input[type='number'],
+input[type='text'],
+select {
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #e2e8f0;
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: #6366f1;
+  }
+
+  option {
+    background: #1f2937;
+  }
+}
+
+// ── Scrollbars ────────────────────────────────────────────────────────────────
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+
+  &:hover {
+    background: #4b5563;
+  }
+}

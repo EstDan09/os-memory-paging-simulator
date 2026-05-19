@@ -1,0 +1,40 @@
+<div class="log-wrap">
+  <div class="log-header">
+    <span class="log-title">Step Log</span>
+    <span class="legend">
+      <span class="dot opt"></span> OPT gana
+      <span class="dot tie"></span> Empate
+    </span>
+  </div>
+
+  <div class="log-scroll" #scrollContainer>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Instruction</th>
+          <th>OPT cost</th>
+          <th>{{ algName }} cost</th>
+          <th>OPT saves</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of displayed; track entry.step) {
+          <tr [class.opt-wins]="entry.optWins" [class.tie]="!entry.optWins">
+            <td class="num">{{ entry.step }}</td>
+            <td class="inst">{{ entry.instruction }}</td>
+            <td class="cost opt-cost">{{ entry.optCost }}s</td>
+            <td class="cost alg-cost" [class.worse]="entry.optWins">{{ entry.algCost }}s</td>
+            <td class="saves">
+              @if (entry.optWins) {
+                <span class="badge-win">+{{ entry.algCost - entry.optCost }}s</span>
+              } @else {
+                <span class="badge-tie">—</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

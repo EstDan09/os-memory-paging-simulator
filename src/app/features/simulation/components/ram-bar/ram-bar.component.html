@@ -1,0 +1,15 @@
+<div class="ram-bar-wrap">
+  <div class="bar-header">
+    <span class="label">RAM — {{ state.algorithmName }}</span>
+    <span class="usage">{{ usedFrames }}/100 frames ({{ ramPercent }}%)</span>
+  </div>
+  <div class="bar">
+    @for (frame of state.ram; track $index; let i = $index) {
+      <div
+        class="frame"
+        [style.background-color]="frameColor(frame)"
+        [title]="frameTitle(frame, i)"
+      ></div>
+    }
+  </div>
+</div>

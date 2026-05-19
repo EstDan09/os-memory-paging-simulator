@@ -1,0 +1,57 @@
+<div class="stats-panel">
+  <div class="stats-row">
+    <div class="stat-box">
+      <span class="stat-label">Processes</span>
+      <span class="stat-value">{{ runningProcesses }}</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Sim-Time</span>
+      <span class="stat-value">{{ state.clock }}s</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <span class="stat-label">RAM KB</span>
+      <span class="stat-value">{{ ramKB }}</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">RAM %</span>
+      <span class="stat-value">{{ ramPercent }}%</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">V-RAM KB</span>
+      <span class="stat-value">{{ vramKB }}</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">V-RAM %</span>
+      <span class="stat-value">{{ vramPercent }}%</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <span class="stat-label">Pages Loaded</span>
+      <span class="stat-value">{{ pagesLoaded }}</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Unloaded</span>
+      <span class="stat-value">{{ pagesUnloaded }}</span>
+    </div>
+    <div class="stat-box" [class.danger]="thrashingIsHigh">
+      <span class="stat-label">Thrashing</span>
+      <span class="stat-value">{{ state.thrashingTime }}s / {{ thrashingPercent }}%</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Fragmentation</span>
+      <span class="stat-value">{{ fragmentationKB }} KB</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box" [class.highlight]="state.evictions > 0">
+      <span class="stat-label">Evictions</span>
+      <span class="stat-value">{{ state.evictions }}</span>
+    </div>
+  </div>
+</div>

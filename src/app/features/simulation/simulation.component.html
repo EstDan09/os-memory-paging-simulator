@@ -1,0 +1,108 @@
+@if (state) {
+  <div class="sim-page">
+
+    <!-- ── Controls bar ── -->
+    <div class="controls-bar">
+      <div class="left">
+        <span class="sim-title">Memory Paging Simulator</span>
+        <span class="alg-badge">OPT  vs  {{ state.algState.algorithmName }}</span>
+      </div>
+
+      <div class="center">
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="progressPercent"></div>
+          </div>
+          <span class="step-label">{{ state.currentStep }} / {{ state.totalSteps }}</span>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="speed-wrap">
+          <span class="speed-label">Speed</span>
+          <input
+            type="range" min="1" max="10" step="1"
+            [value]="speedLevel"
+            (input)="onSpeedChange($event)"
+          />
+        </div>
+        <button class="btn btn-sm" (click)="stepOnce()" [disabled]="state.isRunning || state.done">
+          Step
+        </button>
+        <button
+          class="btn btn-sm"
+          [class.btn-primary]="!state.isRunning"
+          [class.btn-warning]="state.isRunning"
+          (click)="togglePlay()"
+          [disabled]="state.done"
+        >
+          {{ state.isRunning ? 'Pause' : 'Play' }}
+        </button>
+        <button class="btn btn-sm btn-danger" (click)="goBack()">Reset</button>
+      </div>
+    </div>
+
+    <!-- ── Comparación OPT vs ALG ── -->
+    <div class="comparison-bar">
+      <div class="cmp-item">
+        <span class="cmp-label">OPT time</span>
+        <span class="cmp-value opt">{{ state.optState.clock }}s</span>
+      </div>
+      <div class="cmp-divider"></div>
+      <div class="cmp-item">
+        <span class="cmp-label">{{ state.algState.algorithmName }} time</span>
+        <span class="cmp-value alg">{{ state.algState.clock }}s</span>
+      </div>
+      <div class="cmp-divider"></div>
+      <div class="cmp-item">
+        <span class="cmp-label">OPT ventaja</span>
+        <span class="cmp-value advantage" [class.zero]="optAdvantage === 0">
+          {{ optAdvantage > 0 ? '+' + optAdvantage + 's' : '—' }}
+        </span>
+      </div>
+      <div class="cmp-divider"></div>
+      <div class="cmp-item">
+        <span class="cmp-label">OPT thrashing</span>
+        <span class="cmp-value opt">{{ state.optState.thrashingTime }}s</span>
+      </div>
+      <div class="cmp-item">
+        <span class="cmp-label">{{ state.algState.algorithmName }} thrashing</span>
+        <span class="cmp-value alg">{{ state.algState.thrashingTime }}s</span>
+      </div>
+    </div>
+
+    @if (state.done) {
+      <div class="done-banner">
+        Simulation complete —
+        OPT ahorró <strong>{{ optAdvantage }}s</strong> respecto a {{ state.algState.algorithmName }}
+      </div>
+    }
+
+    <!-- ── Two-column layout ── -->
+    <div class="columns">
+      <div class="col">
+        <app-ram-bar [state]="state.optState" />
+        <app-mmu-table [state]="state.optState" />
+        <app-stats-panel [state]="state.optState" />
+      </div>
+      <div class="col-divider"></div>
+      <div class="col">
+        <app-ram-bar [state]="state.algState" />
+        <app-mmu-table [state]="state.algState" />
+        <app-stats-panel [state]="state.algState" />
+      </div>
+    </div>
+
+    <!-- ── Step log (scroll) ── -->
+    <app-step-log
+      [log]="state.stepLog"
+      [algName]="state.algState.algorithmName"
+    />
+
+  </div>
+} @else {
+  <div class="no-sim">
+    <p>No simulation loaded.</p>
+    <a routerLink="/setup" class="btn btn-primary">Go to Setup</a>
+  </div>
+}

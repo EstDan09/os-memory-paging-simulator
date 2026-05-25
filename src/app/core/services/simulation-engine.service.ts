@@ -10,6 +10,7 @@ import { LruAlgorithm } from '../algorithms/lru.algorithm';
 import { MruAlgorithm } from '../algorithms/mru.algorithm';
 import { RndAlgorithm } from '../algorithms/rnd.algorithm';
 import { OptAlgorithm } from '../algorithms/opt.algorithm';
+import { LfuAlgorithm } from '../algorithms/lfu.algorithm';
 
 @Injectable({ providedIn: 'root' })
 export class SimulationEngineService {
@@ -131,6 +132,7 @@ export class SimulationEngineService {
       case 'LRU':  return new LruAlgorithm();
       case 'MRU':  return new MruAlgorithm();
       case 'RND':  return new RndAlgorithm(seed);
+      case 'LFU':  return new LfuAlgorithm();
       default:     return new FifoAlgorithm();
     }
   }

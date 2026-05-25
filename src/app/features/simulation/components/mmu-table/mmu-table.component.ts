@@ -34,6 +34,6 @@ export class MmuTableComponent {
   }
 
   markDisplay(page: Page): string {
-    return page.mark ? '1' : '';
+    return page.mark ? String(page.mark) : '';
   }
 }

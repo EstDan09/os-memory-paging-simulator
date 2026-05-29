@@ -20,7 +20,7 @@ export class SetupComponent {
   P = 10;
   N = 500;
 
-  readonly algorithms = ['FIFO', 'SC', 'LRU', 'MRU', 'RND'];
+  readonly algorithms = ['FIFO', 'SC', 'LRU', 'MRU', 'RND', 'LFU'];
   readonly pOptions = [10, 50, 100];
   readonly nOptions = [500, 1000, 5000];
 

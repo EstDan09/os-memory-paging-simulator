@@ -9,5 +9,5 @@ export interface Page {
   diskAddress: number;       // disk address (always set, pageId * PAGE_SIZE)
   loadedAt: number;          // clock value when loaded into RAM
   lastUsed: number;          // clock value of last access (for LRU/MRU)
-  mark: boolean;             // second-chance reference bit (for SC algorithm)
+  mark: number;             // second-chance reference bit (for SC algorithm)
 }

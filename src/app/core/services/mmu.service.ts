@@ -24,6 +24,8 @@ export class MmuService {
       thrashingTime: 0,
       nextPageId: 1,
       evictions: 0,
+      hits: 0,
+      faults: 0,
     };
   }
 
@@ -99,7 +101,7 @@ export class MmuService {
         diskAddress: pageId * PAGE_SIZE,
         loadedAt: 0,
         lastUsed: 0,
-        mark: false,
+        mark: 0,
       };
 
       s.allPages.set(pageId, page);
@@ -108,6 +110,7 @@ export class MmuService {
       // Las páginas nuevas siempre cuentan como fallos de página
       s.clock += 5;
       s.thrashingTime += 5;
+      s.faults++;
       this.loadIntoRam(page, s, algorithm, instructions, currentStep);
     }
 
@@ -131,11 +134,13 @@ export class MmuService {
 
       if (page.inRam) {
         s.clock += 1; // acierto de página
+        s.hits++;
         page.lastUsed = s.clock;
         algorithm.onPageAccessed(page.frameIndex!, pageId, s);
       } else {
         s.clock += 5; // fallo de página
         s.thrashingTime += 5;
+        s.faults++;
         this.loadIntoRam(page, s, algorithm, instructions, currentStep);
       }
     }
@@ -265,6 +270,8 @@ export class MmuService {
       thrashingTime: state.thrashingTime,
       nextPageId: state.nextPageId,
       evictions: state.evictions,
+      hits: state.hits,
+      faults: state.faults,
     };
   }
 }

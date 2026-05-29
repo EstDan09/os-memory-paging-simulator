@@ -44,6 +44,11 @@
   }
 }
 
+.stat-value {
+  &.hit   { color: #86efac; }
+  &.fault { color: #f87171; }
+}
+
 .stat-label {
   font-size: 9px;
   text-transform: uppercase;

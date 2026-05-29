@@ -12,6 +12,8 @@ export interface AlgorithmState {
   thrashingTime: number;                // tiempo acumulado en fallos de página
   nextPageId: number;                   // contador auto-incremental de IDs de página
   evictions: number;                    // cuántas veces se llamó selectVictim
+  hits: number;                         // total de aciertos de página
+  faults: number;                       // total de fallos de página
 }
 
 export interface StepLogEntry {
